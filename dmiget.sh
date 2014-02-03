@@ -58,10 +58,9 @@ echo -n "\"hw_version\":\"${hw_version}\","
 echo -n "\"asset_tag\":\"${asset_tag}\","
 echo -n "\"processor_count\":\"${processor_count}\","
 echo -n "\"processor\":\"${processor}\","
-echo -n "\"processor_vendor\":\"${processor_vendor}\","
-echo -n "\"memory\":["
+echo -n "\"processor_vendor\":\"${processor_vendor}\""
 
-dmidecode -t 17 | \
+MEM=`dmidecode -t 17 | \
     grep -A 17 '^Handle' | \
     egrep 'Size|Type:|Speed|Manufacturer|Serial|Part|Handle ' | \
     sed 's/^[[:space:]]//' | \
@@ -87,6 +86,13 @@ init=1;
 }
 END {
     printf("}");
-}'
+}' 2>/dev/null`
 
-echo "]}"
+if [ $? -eq 0 ];
+then
+    echo -n ",\"memory\":["
+    echo -n $MEM
+    echo -n "]"
+fi
+
+echo "}"
