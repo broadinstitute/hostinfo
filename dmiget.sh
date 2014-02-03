@@ -1,4 +1,15 @@
 #!/bin/bash
+#
+# This script is designed to be run on any physical Unix-based host in the
+# Broad environment where the "dmidecode" application is installed.  It uses
+# dmidecode to get various hardware information about the host, including CPU,
+# memory, and vendor information.
+#
+# All output of this script is in JSON format so that it can be easily digested
+# by a higher-level programming language.
+#
+# Andrew Teixeira <teixeira@broadinstitute.org>
+#
 
 vendor=`dmidecode -s system-manufacturer`
 bios_version=`dmidecode -s bios-version`
@@ -6,9 +17,22 @@ model=`dmidecode -s system-product-name`
 serial=`dmidecode -s system-serial-number`
 hw_version=`dmidecode -s baseboard-version | awk '{print $1}'`
 asset_tag=`dmidecode -s baseboard-asset-tag | awk '{print $1}'`
-processor_count=`dmidecode -s processor-version|wc -l|awk '{print $1}'` # (count of returned lines is how many processors)
+# count of returned lines is how many processors there are
+processor_count=`dmidecode -s processor-version|wc -l|awk '{print $1}'`
 processor=`dmidecode -s processor-version|uniq|tr -s ' '|sed 's/[ \t]*$//'`
 processor_vendor=`dmidecode -s processor-manufacturer|uniq`
+
+echoerr() {
+    echo "$@" 1>&2;
+}
+
+which dmidecode >/dev/null 2>&1
+
+if [ $? -ne 0 ];
+then
+    echoerr "dmidecode was not found.  Exiting!"
+    exit 1
+fi
 
 if [[ $vendor =~ VMware.* ]];
 then
