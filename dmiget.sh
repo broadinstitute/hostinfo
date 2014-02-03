@@ -10,6 +10,12 @@ processor_count=`dmidecode -s processor-version|wc -l|awk '{print $1}'` # (count
 processor=`dmidecode -s processor-version|uniq|tr -s ' '|sed 's/[ \t]*$//'`
 processor_vendor=`dmidecode -s processor-manufacturer|uniq`
 
+if [[ $vendor =~ VMware.* ]];
+then
+    echo "{}"
+    exit 0
+fi
+
 echo -n "{"
 echo -n "\"vendor\":\"${vendor}\","
 echo -n "\"bios_version\":\"${bios_version}\","
