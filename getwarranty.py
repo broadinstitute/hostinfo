@@ -8,14 +8,18 @@ from time import mktime,sleep,strftime,strptime
 #import time
 from urllib2 import urlopen
 import json
-import dbconfig
-
-dellapikey = "1adecee8a60444738f280aad1cd87d0e"
+import ConfigParser
 
 class Warranty(object):
 
-    def __init__(self):
-        self.db = Database(dbhost, dbuser, dbpass, dbname)
+    def __init__(self, config):
+        self.dbhost = config.get("database", "dbhost")
+        self.dbuser = config.get("database", "dbuser")
+        self.dbpass = config.get("database", "dbpass")
+        self.dbname = config.get("database", "dbname")
+        self.dellapikey = config.get("dell", "apikey")
+
+        self.db = Database(self.dbhost, self.dbuser, self.dbpass, self.dbname)
 
     def gethostinfo(self):
         sqlcode='''SELECT hostname,SKU,system_type,serialnum,vendor FROM
@@ -39,15 +43,13 @@ class Warranty(object):
         sleep(1)
 
         if "dell" in lvendor:
-            #url=("http://support.dell.com/support/topics/global.aspx/support/"
-            #     "my_systems_info/details?c=us&cs=RC956904&l=en&s=hied&servicetag="+serial)
             url = "https://api.dell.com/support/v2/assetinfo/warranty/tags.json?svctags=%s&apikey=%s" % (serial, dellapikey)
         elif "ibm" in lvendor:
-            url=("http://www-307.ibm.com/pc/support/site.wss/warrantyLookup.do?"
+            url = ("http://www-307.ibm.com/pc/support/site.wss/warrantyLookup.do?"
                 "type=%s&serial=%s&country=897&iws=off&sitestyle=lenovo" %
                 (type,serial))
         elif "hp" in lvendor:
-            url=("http://h20000.www2.hp.com/bizsupport/TechSupport/"
+            url = ("http://h20000.www2.hp.com/bizsupport/TechSupport/"
                  "WarrantyResults.jsp?lang=en&cc=us&prodSeriesId=454811&"
                  "prodTypeId=12454&sn=%s&pn=%s&country=US&nickname=&"
                  "find=Display+Warranty+Information" % (serial,sku))
@@ -56,6 +58,7 @@ class Warranty(object):
 
         file = urlopen(url)
         lines = split('>|<',file.read())
+        print lines
         dates = [convertdate(line) for line in lines if convertdate(line)]
 
         try:
@@ -75,6 +78,32 @@ class Warranty(object):
         self.db.curs.execute(sqlcode, (warranty_start, warranty_end, host,
                             sku, type, serial, vendor))
 
+    def getDellWarranty(self, host, serial):
+        baseurl = "https://api.dell.com/support/v2/assetinfo/warranty/tags.json"
+
+        query = "svctags=%s&apikey=%s" % (serial, self.dellapikey)
+        url = "%s?%s" % (baseurl, query)
+
+        f = urlopen(url)
+        data = f.read()
+
+        i = json.loads(data)
+        info = i["GetAssetWarrantyResponse"]["GetAssetWarrantyResult"]["Response"]["DellAsset"];
+
+        print "Ship Date: %s" % info["ShipDate"]
+        print "Order Number: %s" % info["OrderNumber"]
+        print "Customer Number: %s" % info["CustomerNumber"]
+        print "Warranties:"
+        for warranty in info["Warranties"]["Warranty"]:
+            print "\tStart Date: %s" % warranty["StartDate"]
+            print "\tEnd Date: %s" % warranty["EndDate"]
+            print "\tItem Number: %s" % warranty["ItemNumber"]
+            print "\tEntitlement Type: %s" % warranty["EntitlementType"]
+            print "\tService Provider: %s" % warranty["ServiceProvider"]
+            print "\tService Level Code: %s" % warranty["ServiceLevelCode"]
+            print "\tService Level Description: %s" % warranty["ServiceLevelDescription"]
+            print
+
 def convertdate(line):
     '''Based on RegEx match, convert date string to time object for future parsing'''
     if match('[\d]{1,2}/[\d]{1,2}/[\d]{4}',line): 
@@ -86,6 +115,17 @@ def convertdate(line):
     else:
         return False #Not a Date
 
-warranty = Warranty()
-warranty.gethostinfo()
-warranty.db.finish()
+def main():
+    config = ConfigParser.ConfigParser()
+    config.readfp(open("config.ini"))
+
+    warranty = Warranty(config)
+    #warranty.gethostinfo()
+    print warranty.getDellWarranty("node1162.broadinstitute.org", "BNC1DH1")
+    warranty.db.finish()
+
+# Standard boilerplate to call the main() function to begin the program.
+if __name__ == "__main__":
+    ret = main()
+
+    exit(ret)

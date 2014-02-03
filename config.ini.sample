@@ -1,0 +1,8 @@
+[database]
+dbhost = hostname
+dbuser = username
+dbpass = password
+dbname = database
+
+[dell]
+apikey = abc123
