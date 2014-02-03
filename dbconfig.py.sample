@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+dbhost = "hostname"
+dbuser = "username"
+dbpass = "password"
+dbname = "dbname"
