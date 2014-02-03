@@ -39,15 +39,15 @@ then
     exit 0
 fi
 
-bios_version=`dmidecode -s bios-version`
-model=`dmidecode -s system-product-name`
-serial=`dmidecode -s system-serial-number`
-hw_version=`dmidecode -s baseboard-version | awk '{print $1}'`
-asset_tag=`dmidecode -s baseboard-asset-tag | awk '{print $1}'`
+bios_version=`dmidecode -s bios-version|sed 's/[ \t]*$//'`
+model=`dmidecode -s system-product-name|sed 's/[ \t]*$//'`
+serial=`dmidecode -s system-serial-number|sed 's/[ \t]*$//'`
+hw_version=`dmidecode -s baseboard-version|sed 's/[ \t]*$//'`
+asset_tag=`dmidecode -s baseboard-asset-tag|sed 's/[ \t]*$//'`
 # count of returned lines is how many processors there are
 processor_count=`dmidecode -s processor-version|wc -l|awk '{print $1}'`
 processor=`dmidecode -s processor-version|uniq|tr -s ' '|sed 's/[ \t]*$//'`
-processor_vendor=`dmidecode -s processor-manufacturer|uniq`
+processor_vendor=`dmidecode -s processor-manufacturer|uniq|sed 's/[ \t]*$//'`
 
 echo -n "{"
 echo -n "\"vendor\":\"${vendor}\","
@@ -64,8 +64,7 @@ MEM=`dmidecode -t 17 | \
     grep -A 17 '^Handle' | \
     egrep 'Size|Type:|Speed|Manufacturer|Serial|Part|Handle ' | \
     sed 's/^[[:space:]]//' | \
-    sed 's/Handle 0x11/DIMM: /' | \
-    sed 's/^DIMM: \([0-9A-F]*\).*/DIMM: \1/' | \
+    sed 's/^Handle /Handle: /' | \
     sed 's/[ \t]*$//' | \
     awk -F ':' 'BEGIN {
 init=1;
@@ -73,13 +72,13 @@ init=1;
 {
     gsub(/^[ \t]+/, "", $1);
     gsub(/^[ \t]+/, "", $2);
-    if ($1 == "DIMM") {
+    if ($1 == "Handle") {
         if (init != 1) {
             printf("},");
         }
         init=0;
         gsub(/[ \t]+$/, "", $2);
-        printf("{\"dimm\":\"%s\"", $2);
+        printf("{\"handle \":\"%s\"", $2);
     } else {
         printf(",\"%s\":\"%s\"", $1, $2);
     }
