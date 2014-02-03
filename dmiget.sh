@@ -11,17 +11,6 @@
 # Andrew Teixeira <teixeira@broadinstitute.org>
 #
 
-vendor=`dmidecode -s system-manufacturer`
-bios_version=`dmidecode -s bios-version`
-model=`dmidecode -s system-product-name`
-serial=`dmidecode -s system-serial-number`
-hw_version=`dmidecode -s baseboard-version | awk '{print $1}'`
-asset_tag=`dmidecode -s baseboard-asset-tag | awk '{print $1}'`
-# count of returned lines is how many processors there are
-processor_count=`dmidecode -s processor-version|wc -l|awk '{print $1}'`
-processor=`dmidecode -s processor-version|uniq|tr -s ' '|sed 's/[ \t]*$//'`
-processor_vendor=`dmidecode -s processor-manufacturer|uniq`
-
 echoerr() {
     echo "$@" 1>&2;
 }
@@ -31,14 +20,34 @@ which dmidecode >/dev/null 2>&1
 if [ $? -ne 0 ];
 then
     echoerr "dmidecode was not found.  Exiting!"
+    echo "{}"
     exit 1
 fi
+
+if [[ $EUID -ne 0 ]];
+then
+    echoerr "This script must be run as root"
+    echo "{}"
+    exit 1
+fi
+
+vendor=`dmidecode -s system-manufacturer`
 
 if [[ $vendor =~ VMware.* ]];
 then
     echo "{}"
     exit 0
 fi
+
+bios_version=`dmidecode -s bios-version`
+model=`dmidecode -s system-product-name`
+serial=`dmidecode -s system-serial-number`
+hw_version=`dmidecode -s baseboard-version | awk '{print $1}'`
+asset_tag=`dmidecode -s baseboard-asset-tag | awk '{print $1}'`
+# count of returned lines is how many processors there are
+processor_count=`dmidecode -s processor-version|wc -l|awk '{print $1}'`
+processor=`dmidecode -s processor-version|uniq|tr -s ' '|sed 's/[ \t]*$//'`
+processor_vendor=`dmidecode -s processor-manufacturer|uniq`
 
 echo -n "{"
 echo -n "\"vendor\":\"${vendor}\","
