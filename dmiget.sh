@@ -66,7 +66,7 @@ dmidecode -t 17 | \
     egrep 'Size|Type:|Speed|Manufacturer|Serial|Part|Handle ' | \
     sed 's/^[[:space:]]//' | \
     sed 's/Handle 0x11/DIMM: /' | \
-    sed 's/^DIMM: \([0-9]*\).*/DIMM: \1/' | \
+    sed 's/^DIMM: \([0-9A-F]*\).*/DIMM: \1/' | \
     sed 's/[ \t]*$//' | \
     awk -F ':' 'BEGIN {
 init=1;
